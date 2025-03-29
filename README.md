@@ -1,8 +1,9 @@
 # Pasarela de Pagos - API REST
 
-[Repositorio Front](https://github.com/Ritatrcr/FRONT-Diseno-y-Beneficios-de-las-APIs-REST-en-Microservicios.git)
-[Documentación Swagger](https://nodejs-server-server-generated-kappa.vercel.app/docs/#/)
-[Informe](https://es.overleaf.com/read/fbjtcyjzzpjp#f2885c)
+- 🔹 **Repositorio Frontend:** [FRONT-Diseno-y-Beneficios-de-las-APIs-REST-en-Microservicios](https://github.com/Ritatrcr/FRONT-Diseno-y-Beneficios-de-las-APIs-REST-en-Microservicios.git)  
+- 🔹 **Documentación Swagger:** [Explorar API](https://nodejs-server-server-generated-kappa.vercel.app/docs/#/)  
+- 🔹 **📄 Informe Detallado:** [Leer en Overleaf](https://es.overleaf.com/read/fbjtcyjzzpjp#f2885c)  
+
 
 ## 1. Visión General
 
