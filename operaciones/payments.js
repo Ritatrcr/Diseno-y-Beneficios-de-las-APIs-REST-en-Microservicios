@@ -80,7 +80,7 @@ router.get('/:payment_id', authMiddleware, async (req, res) => {
 });
 
 // Webhook para Notificaciones de Pago (sin autenticación)
-router.post('/webhook', async (req, res) => {
+router.put('/webhook', async (req, res) => {
   // Se espera recibir al menos event_type y data con payment_id y new_status.
   const { event_type, data } = req.body;
   
@@ -117,5 +117,33 @@ router.post('/webhook', async (req, res) => {
     res.status(500).json({ message: "Error processing webhook", error });
   }
 });
+
+// Eliminar un Pago 
+router.delete('/:payment_id', authMiddleware, async (req, res) => {
+  const { payment_id } = req.params;
+  
+  try {
+    const paymentRef = db.collection('payments').doc(payment_id);
+    const paymentDoc = await paymentRef.get();
+    
+    if (!paymentDoc.exists) {
+      return res.status(404).json({ message: "Payment not found" });
+    }
+    
+    // Verificar si el pago pertenece al usuario autenticado
+    if (paymentDoc.data().customer_id !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to delete this payment" });
+    }
+    
+    // Eliminar el pago
+    await paymentRef.delete();
+    
+    res.status(200).json({ message: "Payment deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting payment", error });
+  }
+});
+
 
 module.exports = router;

@@ -69,7 +69,7 @@ router.get('/:refund_id', authMiddleware, async (req, res) => {
 });
 
 // Webhook para Notificaciones de Reembolso
-router.post('/webhook', async (req, res) => {
+router.put('/webhook', async (req, res) => {
   const { event_type, data } = req.body;
   if (event_type !== 'refund_status_update' || !data || !data.refund_id || !data.new_status) {
     return res.status(400).json({ message: "Invalid webhook data" });
@@ -102,5 +102,33 @@ router.post('/webhook', async (req, res) => {
     res.status(500).json({ message: "Error processing refund webhook", error });
   }
 });
+
+// Eliminar un Reembolso 
+router.delete('/:refund_id', authMiddleware, async (req, res) => {
+  const { refund_id } = req.params;
+  
+  try {
+    const refundRef = db.collection('refunds').doc(refund_id);
+    const refundDoc = await refundRef.get();
+    
+    if (!refundDoc.exists) {
+      return res.status(404).json({ message: "Refund not found" });
+    }
+    
+    // Verificar si el reembolso pertenece al usuario autenticado
+    if (refundDoc.data().customer_id !== req.user.id) {
+      return res.status(403).json({ message: "Not authorized to delete this refund" });
+    }
+    
+    // Eliminar el reembolso
+    await refundRef.delete();
+    
+    res.status(200).json({ message: "Refund deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting refund", error });
+  }
+});
+
 
 module.exports = router;
