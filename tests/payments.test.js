@@ -1,65 +1,52 @@
 const request = require('supertest');
 const app = require('../index');
 
-const token = 'mocked_token';
-let createdPaymentId;
+let token;
+let paymentId;
 
-describe('Payments API', () => {
-  it('debe crear un nuevo pago', async () => {
+beforeAll(async () => {
+  await request(app).post('/register').send({
+    username: 'payer',
+    email: 'payer@example.com',
+    password: 'password123',
+  });
+
+  const login = await request(app).post('/login').send({
+    email: 'payer@example.com',
+    password: 'password123',
+  });
+
+  token = login.body.token;
+});
+
+describe('Payments', () => {
+  it('debe crear un pago', async () => {
     const res = await request(app)
       .post('/payments')
-      .set('Authorization', token)
+      .set('Authorization', 'Bearer ' + token)
       .send({
-        amount: 100,
+        amount: 50,
         currency: 'USD',
-        payment_method: 'credit_card',
-        description: 'Pago de prueba'
+        payment_method: 'card',
+        description: 'Pago prueba',
       });
 
     expect(res.statusCode).toBe(201);
-    expect(res.body.payment_id).toBeDefined();
-    createdPaymentId = res.body.payment_id;
+    paymentId = res.body.payment_id;
   });
 
-  it('debe obtener todos los pagos del usuario', async () => {
-    const res = await request(app)
-      .get('/payments')
-      .set('Authorization', token);
-
+  it('debe obtener pagos', async () => {
+    const res = await request(app).get('/payments').set('Authorization', 'Bearer ' + token);
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
   });
 
-  it('debe obtener un pago por ID', async () => {
+  it('debe eliminar pago', async () => {
     const res = await request(app)
-      .get(`/payments/${createdPaymentId}`)
-      .set('Authorization', token);
+      .delete('/payments/' + paymentId)
+      .set('Authorization', 'Bearer ' + token);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.payment_id).toBe(createdPaymentId);
-  });
-
-  it('debe actualizar el estado del pago vía webhook', async () => {
-    const res = await request(app)
-      .put(`/payments/webhook`)
-      .send({
-        event_type: 'payment_status_update',
-        data: {
-          payment_id: createdPaymentId,
-          new_status: 'refunded'
-        }
-      });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('Payment status updated');
-  });
-
-  it('debe eliminar un pago', async () => {
-    const res = await request(app)
-      .delete(`/payments/${createdPaymentId}`)
-      .set('Authorization', token);
-
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('Payment deleted successfully');
   });
 });

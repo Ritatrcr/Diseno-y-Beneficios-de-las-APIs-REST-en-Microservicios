@@ -1,36 +1,27 @@
 const express = require('express');
-const { body, validationResult } = require('express-validator');
-
 const router = express.Router();
+const bcrypt = require('bcryptjs');
+const { sign } = require('../utils/jwt');
 
-// Usuarios simulados en memoria
 const users = [];
 
-router.post(
-  '/',
-  [
-    body('email').isEmail().withMessage('Invalid email format'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
-    body('username').notEmpty().withMessage('Username is required')
-  ],
-  (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+router.post('/', async (req, res) => {
+  const { username, email, password } = req.body;
 
-    const { username, email, password } = req.body;
+  if (!username || !email || !password)
+    return res.status(400).json({ message: 'Missing fields' });
 
-    // Verificar si el correo ya existe
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) return res.status(400).json({ message: 'Email already exists' });
+  const exists = users.find(u => u.email === email);
+  if (exists) return res.status(400).json({ message: 'Email already exists' });
 
-    const newUser = { id: `user${users.length + 1}`, username, email, password };
-    users.push(newUser);
+  const hashed = await bcrypt.hash(password, 10);
+  const user = { id: `user${users.length + 1}`, username, email, password: hashed };
+  users.push(user);
 
-    // Token simulado (normalmente usarías JWT real)
-    const fakeToken = `fake-token-${newUser.id}`;
+  const token = sign({ id: user.id, email: user.email });
 
-    res.status(201).json({ message: 'User registered successfully', token: fakeToken, user: newUser });
-  }
-);
+  res.status(201).json({ message: 'User registered successfully', token, user });
+});
 
 module.exports = router;
+module.exports.users = users;  // Exportamos para acceder en login
