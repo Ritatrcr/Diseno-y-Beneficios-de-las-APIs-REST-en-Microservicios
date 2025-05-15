@@ -58,7 +58,6 @@ jobs:
           cache: npm
 
       - run: npm ci --omit=dev
-      - run: npm run build
 
       # === Ejemplo para Vercel (ajusta a tu plataforma) === #
       - name: Deploy to Vercel
