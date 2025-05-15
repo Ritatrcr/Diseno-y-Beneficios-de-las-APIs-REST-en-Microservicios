@@ -37,7 +37,8 @@ router.get('/', authMiddleware, (req, res) => {
 })
 
 router.get('/:payment_id', authMiddleware, (req, res) => {
-  const payment = payments.find(p => p.payment_id === req.params.payment_id)
+  const id = Number(req.params.payment_id)
+  const payment = payments.find(p => p.payment_id === id)
   if (!payment) return res.status(404).json({ message: 'Payment not found' })
   res.json(payment)
 })
@@ -56,7 +57,8 @@ router.put('/webhook', (req, res) => {
 })
 
 router.delete('/:payment_id', authMiddleware, (req, res) => {
-  const index = payments.findIndex(p => p.payment_id === req.params.payment_id)
+  const id = Number(req.params.payment_id)
+  const index = payments.findIndex(p => p.payment_id === id)
   if (index === -1) return res.status(404).json({ message: 'Payment not found' })
 
   if (payments[index].customer_id !== req.user.id) { return res.status(403).json({ message: 'Not authorized to delete this payment' }) }
