@@ -1,60 +1,35 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { db } = require('../firebase');
+
 const router = express.Router();
 
+// Usuarios simulados en memoria
+const users = [];
 
 router.post(
   '/',
   [
     body('email').isEmail().withMessage('Invalid email format'),
-    body('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters long'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
     body('username').notEmpty().withMessage('Username is required')
   ],
-  async (req, res) => {
+  (req, res) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { username, email, password } = req.body;
 
-    try {
-      // Consulta en Firestore para verificar si el email ya existe
-      const usersRef = db.collection('users');
-      const querySnapshot = await usersRef.where('email', '==', email).get();
+    // Verificar si el correo ya existe
+    const existingUser = users.find(u => u.email === email);
+    if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
-      if (!querySnapshot.empty) {
-        return res.status(400).json({ message: 'Email already exists' });
-      }
+    const newUser = { id: `user${users.length + 1}`, username, email, password };
+    users.push(newUser);
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+    // Token simulado (normalmente usarías JWT real)
+    const fakeToken = `fake-token-${newUser.id}`;
 
-      const newUser = {
-        username,
-        email,
-        password: hashedPassword
-      };
-
-      // Agregar el nuevo usuario a Firestore
-      const newUserRef = await usersRef.add(newUser);
-
-      // Generar token con los datos del usuario
-      const token = jwt.sign(
-        { id: newUserRef.id, username, email },
-        process.env.JWT_SECRET,
-        { expiresIn: '3h' }
-      );
-
-      res.status(201).json({ message: 'User registered successfully', token });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error registering user', error });
-    }
+    res.status(201).json({ message: 'User registered successfully', token: fakeToken, user: newUser });
   }
 );
 

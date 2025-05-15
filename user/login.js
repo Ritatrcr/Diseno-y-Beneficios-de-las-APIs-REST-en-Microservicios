@@ -1,43 +1,27 @@
 const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { db } = require('../firebase');
-
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+// Simulación de usuarios en memoria con password "plain text" para test
+const users = [
+  { id: 'user1', email: 'user1@example.com', password: 'password1', username: 'UserOne', role: 'admin' },
+  { id: 'user2', email: 'user2@example.com', password: 'password2', username: 'UserTwo', role: 'user' },
+];
+
+// POST /login
+router.post('/', (req, res) => {
   const { email, password } = req.body;
 
-  try {
-    // Consulta en Firestore para obtener el usuario por email
-    const usersRef = db.collection('users');
-    const querySnapshot = await usersRef.where('email', '==', email).get();
+  if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    if (querySnapshot.empty) {
-      return res.status(400).json({ message: 'User not found' });
-    }
+  const user = users.find(u => u.email === email);
+  if (!user) return res.status(400).json({ message: 'User not found' });
 
-    // Suponiendo que el email es único y obtenemos el primer documento
-    const userDoc = querySnapshot.docs[0];
-    const userData = userDoc.data();
+  if (user.password !== password) return res.status(400).json({ message: 'Invalid credentials' });
 
-    // Verificar la contraseña usando bcrypt
-    const isMatch = await bcrypt.compare(password, userData.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+  // Simulamos un token simple (en realidad usarías jwt)
+  const token = `fake-jwt-token-for-${user.id}`;
 
-    // Generar token con los datos del usuario (ajusta el payload según los campos que tengas)
-    const token = jwt.sign(
-      { id: userDoc.id, username: userData.username, email: userData.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '3h' }
-    );
-
-    res.status(200).json({ message: 'Login successful', token });
-  } catch (error) {
-    res.status(500).json({ message: 'Error logging in', error });
-  }
+  res.status(200).json({ message: 'Login successful', token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
 });
 
 module.exports = router;
