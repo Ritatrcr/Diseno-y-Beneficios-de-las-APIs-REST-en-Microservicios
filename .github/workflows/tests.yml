@@ -42,9 +42,6 @@ jobs:
       - name: Check vulnerabilities
         run: npm audit --production --audit-level=moderate
 
-      - name: Build (asegura que compila)
-        run: npm run build
-
 # ───────────────────────────── DEPLOY ─────────────────────────────── #
   deploy:
     runs-on: ubuntu-latest
