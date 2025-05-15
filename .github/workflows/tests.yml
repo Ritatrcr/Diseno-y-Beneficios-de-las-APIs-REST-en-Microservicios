@@ -1,0 +1,76 @@
+# .github/workflows/test.yml
+name: CI
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # 1️⃣  Usa matrix si quieres probar varias versiones de Node
+    strategy:
+      matrix:
+        node: [18, 20]
+
+    # 2️⃣  (Opcional) Servicio DB para integración
+    # services:
+    #   mongo:
+    #     image: mongo:7
+    #     ports: [27017:27017]
+    #     options: --health-cmd="mongosh --eval 'db.runCommand({ ping: 1 })' --quiet" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # 3️⃣  Variables de entorno (ajusta o elimina si no son necesarias)
+      - name: Create .env.test
+        run: |
+          echo "JWT_SECRET=testSecret" >> .env.test
+          echo "PORT=4000"           >> .env.test
+        shell: bash
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+        #--  Agrega --fix si quieres auto-corregir y no fallar
+
+      - name: Unit tests
+        run: npm run test
+        env:
+          # Ejemplo si usas secrets
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.node }}
+          path: ./junit.xml
+
+      - name: Check vulnerabilities
+        run: npm audit --production --audit-level=moderate
+
+      # 4️⃣  Cobertura (opcional)
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.node }}
+          path: coverage
+
+      # 5️⃣  Build (si corresponde)
+      - name: Build app
+        run: npm run build
