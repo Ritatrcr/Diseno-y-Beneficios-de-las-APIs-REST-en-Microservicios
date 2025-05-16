@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const authMiddleware = require('../middlewares/authMiddleware')
 
-// Arreglo en memoria para guardar reembolsos
+// ↪️ declara tu almacenamiento en memoria
 const refunds = []
 let idCounter = 1
 
@@ -14,18 +14,16 @@ router.post('/', authMiddleware, (req, res) => {
     return res.status(400).json({ message: 'payment_id and reason are required' })
   }
 
-  // Crear el objeto refund
   const refund = {
-    refund_id: idCounter++,
+    refund_id:   idCounter++,
     payment_id,
     customer_id: req.user.id,
     reason,
-    status: 'pending', // Estado inicial
-    created_at: new Date().toISOString()
+    status:      'pending',
+    created_at:  new Date().toISOString()
   }
 
   refunds.push(refund)
-
   return res.status(201).json(refund)
 })
 

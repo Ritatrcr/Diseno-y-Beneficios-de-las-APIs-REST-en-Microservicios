@@ -1,5 +1,5 @@
 const request = require('supertest')
-const app = require('../index')
+const app = require('../app')
 
 describe('POST /login', () => {
   it('debe iniciar sesión con credenciales correctas', async () => {

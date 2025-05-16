@@ -1,0 +1,65 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Flujo completo de Payments API"
+    flow:
+      # 1) Registro de usuario
+      - post:
+          url: "/register"
+          json:
+            username: "testuser{{ $randomInt }}"
+            email: "test{{ $randomInt }}@example.com"
+            password: "password123"
+
+      # 2) Login y captura de token
+      - post:
+          url: "/login"
+          json:
+            email: "test{{ $randomInt }}@example.com"
+            password: "password123"
+          capture:
+            json: "$.token"
+            as: "token"
+
+      # 3) Crear payment con Idempotency-Key
+      - post:
+          url: "/payments"
+          headers:
+            Authorization: "Bearer {{ token }}"
+            Idempotency-Key: "idem-{{ $randomInt }}"
+          json:
+            amount:         50
+            currency:       "USD"
+            payment_method: "card"
+            description:    "Load test payment"
+          capture:
+            json: "$.payment_id"
+            as: "payment_id"
+
+      # 4) Listar payments
+      - get:
+          url: "/payments"
+          headers:
+            Authorization: "Bearer {{ token }}"
+
+      # 5) Simular webhook de actualización de estado
+      - put:
+          url: /payments/webhook"
+          json:
+            event_type: "payment_status_update"
+            data:
+              payment_id: "{{ payment_id }}"
+              new_status: "completed"
+
+      # 6) Borrar el payment
+      - delete:
+          url: "/payments/{{ payment_id }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
